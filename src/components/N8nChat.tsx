@@ -6,17 +6,30 @@ const N8nChat = () => {
   useEffect(() => {
     createChat({
       webhookUrl:
-        "https://n8n.srv1082505.hstgr.cloud/webhook/4091fa09-fb9a-4039-9411-7104d213f601/chat",
+        "https://n8n.srv1082505.hstgr.cloud/webhook/873362e3-1ba9-4784-81ef-3224c8e44951/chat",
 
+      /** REQUIRED for your workflow */
+      enableStreaming: true,
       showWelcomeScreen: false,
       loadPreviousSession: false,
 
-      // 🔥 REQUIRED because your n8n is streaming
-      enableStreaming: true,
+      /** Prevent white placeholder bubble */
+      initialMessages: [
+        "👋 Hi! Welcome to Dezhyne Labs.",
+        "How can we help you today?",
+      ],
+
+      /** Header text */
+      i18n: {
+        en: {
+          title: "Dezhyne Labs | Chatbot",
+          subtitle: "Digital Agency Support",
+          inputPlaceholder: "Type your message here…",
+        },
+      },
     });
   }, []);
 
-  // Chat mounts itself, nothing to render
   return null;
 };
 
