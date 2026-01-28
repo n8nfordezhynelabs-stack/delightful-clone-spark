@@ -63,7 +63,11 @@ const N8nChat = () => {
       const res = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatInput: text }),
+        body: JSON.stringify({
+          chatInput: text,
+          sessionId,          // ✅ REQUIRED
+          route: "general"    // ✅ REQUIRED
+        }),
       });
 
       const data = await res.json();
