@@ -1,5 +1,11 @@
 import { useEffect } from "react";
 
+const sessionId =
+  localStorage.getItem("dex_chat_session") ??
+  crypto.randomUUID();
+
+localStorage.setItem("dex_chat_session", sessionId);
+
 const N8nChat = () => {
   useEffect(() => {
     if ((window as any).__DEXHYNE_CHAT__) return;
