@@ -20,7 +20,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
 
-      {/* 🔥 n8n Chatbot mounted globally */}
+      {/* ✅ KEEP THIS EXACTLY HERE */}
       <N8nChat />
 
       <Toaster />
