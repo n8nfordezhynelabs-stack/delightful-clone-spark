@@ -102,6 +102,9 @@
   border-radius: 8px;
   border: none;
   outline: none;
+  background: #ffffff;
+  color: #020617;              /* 👈 TEXT COLOR FIX */
+  font-size: 14px;
 }
 
 .dex-chat-input button {
