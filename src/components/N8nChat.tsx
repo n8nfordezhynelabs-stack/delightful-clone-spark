@@ -6,7 +6,7 @@ const N8nChat = () => {
     (window as any).__DEXHYNE_CHAT__ = true;
 
     const webhookUrl =
-      "https://n8n.srv1082505.hstgr.cloud/webhook/873362e3-1ba9-4784-81ef-3224c8e44951/chat";
+      "https://n8n.srv1082505.hstgr.cloud/webhook/9dbadb91-434e-4c43-8c1b-a797ec107646/chat";
     const webhookRoute = "general";
     const brandName = "Dezhyne Labs";
     const brandLogo = "https://www.blushu.in/cdn/shop/files/2.png";
