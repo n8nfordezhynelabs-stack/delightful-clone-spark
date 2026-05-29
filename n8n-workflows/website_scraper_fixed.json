@@ -1,0 +1,2233 @@
+{
+  "updatedAt": "2026-05-29T17:40:27.880Z",
+  "createdAt": "2026-02-10T07:08:21.874Z",
+  "id": "Zp5TEvmh37ZJmuFF",
+  "name": "Website Scraper RE",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// input: { success: true, links: [ { url: \"...\" } ] }\nconst items = $input.all();\nconst seen = new Set();\nconst out = [];\n\nconst ALLOWED_HOST = 'imtiaz.ae';\n\n// blocked path prefixes (substring matched against pathname)\nconst BLOCK_PREFIXES = [\n  '/press-blog','/newsletter','/assets-vault','/press','/gallery','/blog',\n  '/news','/news-and-press','/events','/event/','/construction-history/',\n  '/cookie-policy','/privacy-notice','/privacy-policy','/terms','/faq',\n  '/careers','/pay-now','/3d-tour','/investor-relation','/contact-us'\n];\n\n// blocked exact paths (trailing-slash insensitive)\nconst BLOCK_EXACT = new Set(); // no exact-path blocks; keep about-us, properties, communities\n\nfor (const it of items) {\n  const links = it.json.links || (it.json.url ? [it.json] : []);\n  for (const link of links) {\n    let raw = (link.url || '').trim();\n    if (!raw) continue;\n\n    // Drop XML/assets\n    if (/\\.(xml|pdf|jpg|jpeg|png|gif|svg|webp|ico|css|js|zip)$/i.test(raw)) continue;\n\n    let u;\n    try { u = new URL(raw); } catch { continue; }\n\n    // host must be exactly imtiaz.ae (drop subdomains)\n    if (u.hostname.toLowerCase() !== ALLOWED_HOST) continue;\n\n    // only http/https\n    if (!/^https?:$/.test(u.protocol)) continue;\n\n    // strip query + fragment for canonical url (dedup ?utm_xxx)\n    let path = u.pathname.replace(/\\/+$/, '') || '/';\n    const pathLower = path.toLowerCase();\n\n    if (BLOCK_EXACT.has(pathLower)) continue;\n    let blocked = false;\n    for (const p of BLOCK_PREFIXES) {\n      if (pathLower.startsWith(p)) { blocked = true; break; }\n    }\n    if (blocked) continue;\n\n    const canonical = `https://${ALLOWED_HOST}${path}`;\n    if (seen.has(canonical)) continue;\n    seen.add(canonical);\n\n    out.push({ json: { url: canonical } });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        80
+      ],
+      "id": "64875457-3f9e-499c-87c0-7108d88a7690",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        208,
+        336
+      ],
+      "id": "71e44f01-ff3d-49cd-918d-30e7a1711573",
+      "name": "When clicking \u2018Execute workflow\u2019"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        864,
+        336
+      ],
+      "id": "eb2e52cc-71f4-458c-ba91-2986d50c36df",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f84fa14c-2e29-46ef-a914-2267eb52b815",
+              "name": "html",
+              "value": "={{ $json.data ?? $json.body ?? $json.html ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "096f51e1-e470-4fde-8d62-3338ffcc4f6b",
+              "name": "url",
+              "value": "={{ $json.url ?? $('Loop Over Items').item.json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        256
+      ],
+      "id": "acbf6c44-38ab-4aa8-b8f2-bb319922c9c6",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\n// HTTP errors from continueOnFail land here as { error: {...} }\nif (j.error || !j.html || typeof j.html !== 'string') {\n  return { url: j.url, project_id: j.project_id, text: '' };\n}\nconst text = j.html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n  .replace(/<!--([\\s\\S]*?)-->/g, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ')\n  .replace(/&amp;/g, '&')\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"')\n  .replace(/\\s+/g, ' ')\n  .trim();\nreturn { url: j.url, project_id: j.project_id, text };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        256
+      ],
+      "id": "ae5899a3-bc67-40fb-86f0-58473e845258",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aa3e5022-2d6d-43f6-bf87-9de112a3345f",
+              "leftValue": "={{$json.text.length > 50}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1760,
+        256
+      ],
+      "id": "fd597bd8-45d7-4b53-bc66-69b615d97fc2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.text || \"\";\nconst text = raw.replace(/\\s+/g, \" \").trim(); // clean whitespace\nconst chunkSize = 1000;\nconst overlap = 200;\n\nconst chunks = [];\nlet i = 0;\n\nwhile (i < text.length) {\n  const chunk = text.slice(i, i + chunkSize).trim();\n\n  // Only save useful chunks\n  if (chunk.length > 50) {\n    chunks.push({\n      content: chunk,\n      url: $json.url,\n      project_id: $json.project_id\n    });\n  }\n\n  i += chunkSize - overlap;\n}\n\nreturn chunks;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        256
+      ],
+      "id": "b36d6c70-6dfa-4edf-a366-96d982638cc3",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "dandrewbakery",
+          "mode": "list",
+          "cachedResultName": "dandrewbakery"
+        },
+        "options": {
+          "clearNamespace": false,
+          "pineconeNamespace": "imitate"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        2208,
+        336
+      ],
+      "id": "49638253-bde2-4cd8-b864-4412fa000451",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "sCJplZzPLdKi6pSE",
+          "name": "N8NDezhynelabs PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        560
+      ],
+      "id": "55615dee-00f2-4196-84bd-2a05f645ea73",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hnEfbtGYa8aZqYlL",
+          "name": "n8nfordezhynelabs OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "url",
+                "value": "={{ $json.url }}"
+              },
+              {
+                "name": "content",
+                "value": "={{ $json.content }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        2352,
+        560
+      ],
+      "id": "ba00bc64-fbd1-44b3-b970-6695029a3045",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "operation": "map",
+        "url": "https://imtiaz.ae/",
+        "includeSubdomains": true,
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawl",
+      "typeVersion": 1,
+      "position": [
+        416,
+        80
+      ],
+      "id": "118271cb-95b9-46c6-a770-8ed94e54d0b7",
+      "name": "Map a website and get urls1",
+      "retryOnFail": true,
+      "credentials": {
+        "firecrawlApi": {
+          "id": "xhOuWbz1t0R1vO6Q",
+          "name": "N8Nfordezhynelabs Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "07cbc9e5-e1ae-44b9-8f55-47fea19fb199",
+      "name": "Scrape Website URL3",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1152,
+        208
+      ],
+      "typeVersion": 3,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "32fe6abf-5ab8-4738-965f-e96e8d243351",
+      "name": "Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Generates a unique ticket ID in the format TKT-YYYYMMDD-XXXX where XXXX is a random 4-digit number. Call this tool before creating a support ticket.",
+        "jsCode": "const now = new Date();\nconst dateStr = now.toISOString().slice(0,10).replace(/-/g, \"\");\nconst random = Math.floor(1000 + Math.random() * 9000);\nconst ticket_id = `TKT-${dateStr}-${random}`;\nreturn ticket_id;"
+      },
+      "id": "477365c0-e7f9-44a2-bb89-d4b0aab3fd1e",
+      "name": "Generate Ticket ID",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "cead8809-f31a-4751-a5f8-b912ee7b89f1",
+      "name": "OpenAI Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        1376
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "hnEfbtGYa8aZqYlL",
+          "name": "n8nfordezhynelabs OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0",
+          "mode": "list",
+          "cachedResultName": "Dezhyne Labs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1528801260,
+          "mode": "list",
+          "cachedResultName": "APPOINTMENTS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0/edit#gid=1528801260"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Date_', ``, 'string') }}",
+            "Full Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Full_Name', ``, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+            "Phone number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone_number', ``, 'string') }}",
+            "Query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date ",
+              "displayName": "Date ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone number",
+              "displayName": "Phone number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Query",
+              "displayName": "Query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "dd8e5c30-1c00-4e03-ab69-77eb2d0f56da",
+      "name": "Appointments",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        1248,
+        1376
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ihYahMZX0jUkqMPG",
+          "name": "n8nfordezhynelabs Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "n8nfordezhynelabs@gmail.com",
+          "mode": "list",
+          "cachedResultName": "n8nfordezhynelabs@gmail.com"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {
+          "timeZone": {
+            "__rl": true,
+            "value": "Asia/Dubai",
+            "mode": "list",
+            "cachedResultName": "Asia/Dubai"
+          }
+        }
+      },
+      "id": "01bb9214-c562-4070-a543-d9c2d68d3e2f",
+      "name": "Check Availability",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1376,
+        1376
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "AryL1fS3jjwZdFqt",
+          "name": "N8NDezhyne Labs Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "=n8nfordezhynelabs@gmail.com",
+          "mode": "id",
+          "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('attendees0_Attendees', ``, 'string') }}"
+          ],
+          "color": "2",
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}",
+          "visibility": "public"
+        }
+      },
+      "id": "b5c05762-d3a8-416b-a467-0ca59afc9aa6",
+      "name": "Create Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1504,
+        1376
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "AryL1fS3jjwZdFqt",
+          "name": "N8NDezhyne Labs Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "calendar": {
+          "__rl": true,
+          "value": "=n8nfordezhynelabs@gmail.com",
+          "mode": "id",
+          "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "id": "58d15881-4583-482b-bf73-52be508c353f",
+      "name": "Retreive Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1632,
+        1376
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "AryL1fS3jjwZdFqt",
+          "name": "N8NDezhyne Labs Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "=n8nfordezhynelabs@gmail.com",
+          "mode": "id",
+          "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', `Event ID of event that needs to be rescheduled`, 'string') }}",
+        "updateFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "id": "dee85c4a-d17a-4ade-b5ee-fb9603e5524e",
+      "name": "Update Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1760,
+        1376
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "AryL1fS3jjwZdFqt",
+          "name": "N8NDezhyne Labs Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "=n8nfordezhynelabs@gmail.com",
+          "mode": "id",
+          "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "id": "756d80d0-bff2-4a64-8fae-d2bf4664323f",
+      "name": "Delete Event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "position": [
+        1888,
+        1376
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "AryL1fS3jjwZdFqt",
+          "name": "N8NDezhyne Labs Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are **Alicia**, the Primary Orchestrator Agent for Imtiaz Developments, a luxury real estate developer in Dubai.\n\nToday's date is {{ $now.format('yyyy-MM-dd') }}.\nThis date is the ONLY reference for interpreting relative dates (today, tomorrow, next week, etc.).\n\n========================\nPRIMARY KNOWLEDGE RULE\n========================\n\nALL business-related information MUST come from TOOLS.\n\nThis includes:\n- Properties and projects\n- Communities and locations\n- Amenities and features\n- Company information\n- Website content\n- Policies\n- FAQs\n- Pricing\n- Availability\n- Contact information\n\n\u274c Memory must NEVER be used for the above.\n\u274c If a relevant tool exists, you MUST use it.\n\u274c Tool output is the ONLY source of truth.\n\n========================\nPINECONE KNOWLEDGE TOOL (CRITICAL)\n========================\n\nUse **Pinecone Vector Store** whenever the user asks ANYTHING related to:\n- Properties and projects\n- Communities and locations\n- Amenities and features\n- What is offered\n- Company or website information\n- Policies, FAQs, pricing, availability\n- \"What properties do you have?\", \"What is available?\", \"Tell me about your projects\"\n- Property recommendations based on user needs\n\nDo NOT use Pinecone for:\n- Viewing appointment booking\n- Calendar availability checks\n\nIf Pinecone returns:\n- No results\n- Empty response\n- Error / timeout\n\nTreat it as **NOT AVAILABLE**.\n\nNever infer or assume missing information.\n\n========================\nPROPERTY SEARCH QUERY STRATEGY\n========================\n\nWhen user asks for property recommendations based on their profile, use MULTIPLE focused Pinecone queries:\n\n**User asks: \"I work in Business Bay, want modern apartment\"**\n\nQuery Pinecone with:\n1. \"Properties Jumeirah Village Circle JVC central location\"\n2. \"Modern apartments young professionals amenities built-in office workspace\"\n3. \"Studios 1 bedroom apartments connectivity central Dubai\"\n\n**User asks: \"Family with kids, need schools nearby\"**\n\nQuery Pinecone with:\n1. \"Family-friendly communities kids playground children amenities\"\n2. \"Properties near schools educational facilities\"\n3. \"2 bedroom 3 bedroom apartments spacious family\"\n\nThen synthesize results and prioritize based on:\n- Location match (which is actually closest/best connected to their needs)\n- Lifestyle match (amenities they care about)\n- Unit types that fit their profile\n\n========================\nLOCATION & GEOGRAPHY ACCURACY (CRITICAL)\n========================\n\nWhen answering questions about location, commute, or proximity:\n\n1. NEVER say a property is \"in [Area X]\" unless it is ACTUALLY located in that area.\n   \u274c WRONG: \"Properties in Business Bay area\" (when they're in JVC or Dubai Islands)\n   \u2705 CORRECT: \"Properties well-connected to Business Bay\" or \"near Business Bay\"\n\n2. When user mentions where they work/live, ALWAYS consider:\n   - Actual location of each property\n   - Commute distance and connectivity\n   - Lifestyle match (urban vs waterfront vs residential)\n\n3. Be explicit about actual locations:\n   \u2705 \"Pearl House is located in Jumeirah Village Circle (JVC), which is well-connected to Business Bay\"\n   \u2705 \"Beach Walk Residence is on Dubai Islands, offering waterfront living but a longer commute to central areas\"\n\n4. PROXIMITY & COMMUTE DATA HANDLING:\n\n   If Pinecone returns property info BUT NO commute/distance data:\n   \n   Do NOT make up commute times or proximity claims.\n   \n   Instead, say:\n   \"[Property X] is located in [Actual Area]. While I don't have exact commute times to [User's Location], [Area] is generally well-connected to central Dubai.\"\n   \n   If user specifically asks about commute and you don't have data:\n   \"I don't have the exact commute time from [Community] to [User's Location] in my knowledge base. However, [Community] is located in [Area]. Would you like me to schedule a viewing so our sales team can provide you with detailed connectivity information?\"\n   \n   NEVER say:\n   - \"It's very close to [Area]\" (unless confirmed in knowledge base)\n   - \"Just 10 minutes away\" (unless you have this data)\n   - \"In the [Area] area\" (when it's actually in a different location)\n\n========================\nPERSONALIZED RECOMMENDATIONS (MANDATORY)\n========================\n\nWhen user shares their profile (work location, lifestyle, family status, budget), you MUST:\n\n1. PRIORITIZE, don't just list.\n   - Start with the BEST match based on their situation\n   - Then offer alternatives with clear trade-offs\n\n2. EXPLAIN WHY each recommendation fits them:\n   \u274c WRONG: \"Pearl House has gym and pool\" (generic feature list)\n   \u2705 CORRECT: \"Pearl House in JVC is ideal for you because it has built-in office workspace (great for remote work days) and it's centrally located for an easy commute to Business Bay\"\n\n3. Call out TRADE-OFFS when multiple options exist:\n   - \"If you prefer shorter commute \u2192 [Option A in JVC]\"\n   - \"If you prefer waterfront lifestyle and don't mind longer commute \u2192 [Option B in Dubai Islands]\"\n\n4. Match amenities to persona:\n   - **Young professional** \u2192 highlight: gym, co-working spaces, built-in office, connectivity, modern design, furnished units\n   - **Family with kids** \u2192 highlight: kids' play areas, schools nearby, safe community, spacious units, family amenities\n   - **Investor** \u2192 highlight: rental demand, ROI potential, handover date, location appreciation, property management\n\n========================\nRECOMMENDATION RESPONSE FORMAT\n========================\n\nWhen recommending properties based on user profile, use this structure:\n\n**Format:**\n\n1. Acknowledge user's key requirements\n   \"Since you work in [Location] and prefer [Feature], here are communities that match your needs:\"\n\n2. Primary recommendation (best match)\n   \"**[Community Name] ([Actual Location])**\"\n   - Why it's the best fit for their situation (2-3 sentences)\n   - 2-3 key features relevant to their profile\n   - Clear location context and connectivity\n   - Link to property page\n\n3. Alternative options (if applicable)\n   \"**Alternative: [Community Name] ([Actual Location])**\"\n   - Why it's also suitable + what's the trade-off\n   - Link to property page\n\n4. Qualifying question to narrow further\n   \"To help you choose between these options, could you tell me:\n   - Your budget range?\n   - [Relevant clarifying question based on their profile]?\"\n\n**Example (LEARN FROM THIS):**\n\nUser: \"I'm a young professional working in Business Bay and prefer a modern apartment.\"\n\n\u2705 CORRECT Response:\n\"Since you work in Business Bay and prefer modern apartments, here's what suits you best:\n\n**Pearl House II (Jumeirah Village Circle)** \u2013 This is your best match because JVC is well-connected to Business Bay, making your commute easier. Pearl House II offers fully furnished studios and 1-bedrooms with built-in office workspaces\u2014perfect for remote work days\u2014plus gym, clubhouse, and modern interiors. [View Pearl House II](link)\n\n**Alternative: Beach Walk Residence (Dubai Islands)** \u2013 If you're open to a waterfront lifestyle with a longer commute to Business Bay, this offers beach access, infinity pools, and resort-style amenities. [View Beach Walk](link)\n\nWould you prefer the option closer to your work, or are you interested in the waterfront lifestyle?\"\n\n\u274c WRONG Response:\n\"Modern apartments in Business Bay area:\n\u2022 Beach Walk Residence \u2013 studios to 2BR, pools, gym\n\u2022 Pearl House \u2013 studios and 1BR, fully furnished\n\u2022 Sunset Bay 5 \u2013 1-3BR, rooftop pool\nAll have modern amenities. Let me know if you want more info!\"\n\nWhy it's bad:\n- Says \"in Business Bay area\" when none are actually in Business Bay\n- Just lists features without explaining why they fit a young professional\n- Doesn't prioritize or explain trade-offs\n- Doesn't help user make a decision\n\n========================\nMEMORY USAGE (VERY LIMITED)\n========================\n\nMemory may be used ONLY for:\n- Name\n- Email\n- Phone number\n\nAND ONLY AFTER:\n- A successful viewing appointment booking\n\nMemory is NOT allowed for:\n- Properties\n- Projects\n- Communities\n- Company info\n- Availability\n- Policies\n- Appointments\n\n========================\nGREETING RULE\n========================\n\nIf the user message is ONLY a greeting (Hi / Hello / Hey):\n\nReply EXACTLY:\n\"Hi! How can I help you today?\"\n\nNo tools.\nNo extra text.\n\n========================\nPROPERTY INQUIRY (STRICT OVERRIDE)\n========================\n\nThis section OVERRIDES all other logic for properties.\n\nALWAYS call Pinecone for ANY property-related question.\n\n--------------------------------\nA) SPECIFIC PROPERTY/COMMUNITY QUERY\n--------------------------------\nExamples:\n- \"Do you have properties in JVC?\"\n- \"Tell me about Pearl House\"\n- \"What's available in Dubai Islands?\"\n\nFLOW:\n1. Call Pinecone using the EXACT property/community name from the user.\n2. Check if matching property exists.\n\nRESPONSES:\n\nIf FOUND:\n\"Yes, we do have properties in [Location/Community]. [Brief 2-3 sentence summary of what's available]. [Link to property page]\"\n\nIf NOT FOUND:\n\"I don't have information about properties in [Location] in our current portfolio. Our active communities include Dubai Islands, Jumeirah Village Circle (JVC), Dubailand, and Meydan. Would you like to explore any of these areas?\"\n\nRules:\n- Be conversational, not robotic\n- Provide links wherever available\n- If location is outside Dubai, politely clarify we focus on Dubai\n\n--------------------------------\nB) PROPERTY LIST / GENERAL QUERY\n--------------------------------\nExamples:\n- \"What properties do you have?\"\n- \"Show me available projects\"\n- \"What communities do you develop?\"\n\nFLOW:\n1. Call Pinecone with a broad query like:\n   \"List all available properties communities projects\"\n2. Extract property/community names + short descriptions.\n\nRESPONSES:\n\nIf properties FOUND:\n\"Here are our current communities and projects:\n- **[Community Name]** ([Location]) \u2013 [short description (max 25 words)] [Link]\n- **[Community Name]** ([Location]) \u2013 [short description] [Link]\n\nWhich type of property or lifestyle are you looking for? I can help you narrow this down.\"\n\nIf NO properties FOUND (unlikely):\n\"I'm having trouble retrieving our project list right now. Would you like me to connect you with our sales team?\"\n\nRules:\n- Group by location if helpful\n- Keep descriptions benefit-focused, not just features\n- Always end with qualifying question\n\n========================\nTIME FORMAT HANDLING (STRICT)\n========================\n\nWhen users mention time, ALWAYS normalize to **24-hour format** before using any appointment tools.\n\nYOU MUST CONVERT:\n- \"1 pm\" \u2192 13:00\n- \"1:30 pm\" \u2192 13:30\n- \"10 am\" \u2192 10:00\n- \"10:15 am\" \u2192 10:15\n- \"12 pm / noon\" \u2192 12:00\n- \"12 am / midnight\" \u2192 00:00\n- \"1\u20132 pm\" \u2192 13:00 to 14:00\n- \"4 to 5pm\" \u2192 16:00 to 17:00\n- \"3:30\u20135 pm\" \u2192 15:30 to 17:00\n\nRules:\n- Default timezone: UAE (Gulf Standard Time, UTC+4)\n- If unclear (example: \"book for 7\"):\n  Ask: \"Is that 7 AM or 7 PM?\"\n\nALL tool calls must use ISO datetime format:\nYYYY-MM-DDTHH:mm:00\n\n========================\nVIEWING APPOINTMENTS & DATE DISAMBIGUATION\n========================\n\nViewing appointments are TOOL-FIRST.\n\n--------------------------------\nDATE CLARIFICATION (MANDATORY)\n--------------------------------\n\nIf the user provides an ambiguous date:\nExamples:\n- \"Book viewing on Dec 7\"\n- \"Schedule visit on 7th\"\n\nYou MUST ask:\n\"Do you mean February 7, 2026 or December 7, 2026?\"\n\nNever guess.\nNever infer month or year.\n\n--------------------------------\nBOOKING FLOW (STRICT)\n--------------------------------\n\n1. Normalize date using today's date {{ $now.format('yyyy-MM-dd') }}.\n2. Normalize time to 24-hour format.\n3. IDENTIFY the specific property/community for viewing.\n4. ALWAYS call **Check Availability** tool.\n5. If unavailable \u2192 inform user and ask for another time.\n6. If available \u2192 collect required details:\n   - Full name\n   - Email\n   - Phone number (with country code)\n   - Property/community they want to view\n7. Ask for explicit confirmation.\n8. ONLY THEN call **Create Event**.\n\nNever skip availability checks.\nNever book from memory.\n\nExample confirmation:\n\"Just to confirm: I'll book a viewing for [Property Name] on [Day, Date] at [Time] under the name [Name], email [Email], phone [Phone]. Is this correct?\"\n\n========================\nSUPPORT & INQUIRIES\n========================\n\n- General inquiry \u2192 call **Appointments** tool to log inquiry\n- Complex request or escalation \u2192 offer to connect with sales team\n- Technical issue with website \u2192 offer support ticket\n\nNever answer from memory.\n\n========================\nEMAIL & CONTACT RULE\n========================\n\nEmail and phone may be:\n- Requested\n- Stored\n- Shared\n\nONLY for:\n- Viewing appointment bookings\n- Legitimate inquiry follow-ups\n\n\u274c Never share personal contact info for general property questions.\n\u2705 Use appointment booking flow to capture contact details properly.\n\n========================\nFAILURE RULE (NON-NEGOTIABLE)\n========================\n\nIf ANY required tool:\n- Errors\n- Times out\n- Returns empty or invalid data\n\nReply using this template (adapt based on context):\n\nFor property info failures:\n\"I'm having trouble retrieving that information right now. Would you like me to schedule a call with our sales team who can provide you with detailed information?\"\n\nFor appointment booking failures:\n\"I'm having trouble accessing the calendar right now. Let me collect your details and our team will confirm your viewing appointment within 2 hours. May I have your name, email, and phone number?\"\n\nNever expose technical details like \"Pinecone timeout\" or \"Calendar API error\".\n\n========================\nLANGUAGE & TONE\n========================\n\n- Conversational and professional (real estate agent style)\n- Friendly and helpful\n- Clear and confident\n- Use short paragraphs for readability\n- Be consultative, not pushy\n- Never robotic or scripted\n- Never expose internal tool names (no \"Pinecone\", no \"vector store\", no \"tool failed\")\n\nThink of yourself as a knowledgeable sales consultant, not a bot.\n\n========================\nSTRICT PROHIBITIONS\n========================\n\n\u274c No answers without tools for property/company information\n\u274c No memory-based knowledge about properties/company\n\u274c No internal tool names exposed to users\n\u274c No assumptions about location, commute, or features not in knowledge base\n\u274c No saying \"in [Area]\" when property is in a different location\n\u274c No generic brochure-style lists without personalization\n\u274c No made-up pricing, availability, or specifications\n\n========================\nLINK FORMATTING RULE (MANDATORY)\n========================\n\nWhenever a link is included in a response:\n\n1. NEVER write \"Click here\" as plain text.\n2. ALWAYS format links using Markdown anchor syntax:\n\n   [Link Text](URL)\n\n3. The link text MUST be descriptive.\n   Allowed examples:\n   - View [Property Name]\n   - Explore [Community Name]\n   - Check [Project] details\n   - See [Community] amenities\n   - Learn more about [Property]\n\n4. Raw URLs MUST NOT appear in the response.\n\n5. Links must come ONLY from tool output.\n   Never invent or modify URLs.\n\n6. Example (CORRECT):\n   You can explore Pearl House II and check unit availability here: [View Pearl House II](https://imtiaz.ae/property/pearl-house-ii-by-imtiaz)\n\n7. Example (INCORRECT):\n   You can check here: Click here\n   Visit: https://imtiaz.ae/property/pearl-house-ii-by-imtiaz\n\nPLATFORM NOTE:\n- If the output channel is WhatsApp or SMS (plain text only),\n  hyperlinks are NOT supported.\n  In that case, output the FULL URL on its own line with a descriptive label:\n  \n  \"View Pearl House II:\n  https://imtiaz.ae/property/pearl-house-ii-by-imtiaz\"\n\n========================\n1ST-PERSON VOICE (MANDATORY)\n========================\n\nYou ARE part of Imtiaz Developments. Always speak as \"we\" / \"our\" / \"us\".\n\nNEVER use 3rd-person company references like:\n  \u274c \"Imtiaz Developments offers...\"\n  \u274c \"Imtiaz has communities in...\"\n  \u274c \"The company developed...\"\n  \u274c \"They have properties...\"\n\nALWAYS use 1st-person plural:\n  \u2705 \"We offer luxury apartments across Dubai...\"\n  \u2705 \"Our communities include JVC, Dubai Islands, and Meydan...\"\n  \u2705 \"We developed Pearl House II as a modern...\"\n  \u2705 \"Our portfolio features 38 active properties...\"\n\nThe ONLY exceptions where 3rd-person is allowed:\n- Specific property names: \"Pearl House II is located in...\" (the PROPERTY, not the company)\n- Direct quotes from leadership\n\nIf you catch yourself writing \"Imtiaz Developments\" or \"the company\" in a sentence,\nrewrite it as \"we\" or \"our\" before responding.\n\n========================\n\n========================\nEND OF SYSTEM PROMPT\n========================\n",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "04b1d7ac-195b-40c0-a1df-cbd68938d4d1",
+      "name": "Customer Support Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1360,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=this is a real estate website\n",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "dandrewbakery",
+          "mode": "list",
+          "cachedResultName": "dandrewbakery"
+        },
+        "topK": 10,
+        "options": {
+          "pineconeNamespace": "imitate"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        2016,
+        1392
+      ],
+      "id": "ba2c8c3f-326f-4299-885f-5cbdc6cb6643",
+      "name": "Pinecone Vector Store2",
+      "credentials": {
+        "pineconeApi": {
+          "id": "sCJplZzPLdKi6pSE",
+          "name": "N8NDezhynelabs PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2016,
+        1584
+      ],
+      "id": "ea93208f-bf9e-4ab3-a6cb-699776dcaabd",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "hnEfbtGYa8aZqYlL",
+          "name": "n8nfordezhynelabs OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "*",
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        592,
+        1152
+      ],
+      "id": "f35f0139-b75c-44b8-9a72-9eacf776d4cf",
+      "name": "When chat message received",
+      "webhookId": "9dbadb91-434e-4c43-8c1b-a797ec107646"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"output\": \"Hi, how can I help you today?\"\n}",
+        "options": {}
+      },
+      "id": "3cfe6ee8-85a1-4f25-841d-afb423383e2d",
+      "name": "Respond With Initial Message",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1120,
+        1008
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "158a0b91-534d-4745-b10e-8a7c97050861",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.chatInput }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2728fa48-f3d1-469f-b042-976a6e1cc680",
+      "name": "If1",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        880,
+        1152
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e8d05ca7-44dc-41e0-a241-eb666015d900",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1920,
+        1136
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "content": "##  Website Scraper",
+        "height": 784,
+        "width": 2512
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "6177b947-351d-4e78-b36c-839e2adb8a48",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { url: }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        336
+      ],
+      "id": "8bac2ac0-8e3d-4b13-bfcd-269c4398dccc",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $json.output || \"\";\n\n// Force clean bullet formatting\ntext = text\n  .replace(/\\s-\\s/g, '\\n\u2022 ')\n  .replace(/Eligibility conditions:/i, '\\n\\n**Eligibility conditions:**')\n  .replace(/Non-returnable items include:/i, '\\n\\n**Non-returnable items include:**');\n\n// Ensure link is clickable (Markdown)\ntext = text.replace(\n  /(https?:\\/\\/www\\.blushu\\.in\\/policies\\/refund-policy)/g,\n  '[View full Refund Policy]($1)'\n);\n\nreturn {\n  output: text.trim()\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        1136
+      ],
+      "id": "e227d897-a0b7-4e7b-bf18-879c2f4aeed4",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        208
+      ],
+      "id": "b202e220-5657-4ee6-bdde-c1f2d15c593a",
+      "name": "Wait",
+      "webhookId": "0ff6bac9-857c-4689-8a9e-d00bbf1d37e6"
+    }
+  ],
+  "connections": {
+    "When clicking \u2018Execute workflow\u2019": {
+      "main": [
+        [
+          {
+            "node": "Map a website and get urls1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map a website and get urls1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website URL3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Ticket ID": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appointments": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retreive Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Customer Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond With Initial Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Scrape Website URL3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "f63509f0-c9b5-4ca3-ba5c-94c3f78ea9ad",
+  "activeVersionId": "f63509f0-c9b5-4ca3-ba5c-94c3f78ea9ad",
+  "versionCounter": 100,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-10T07:08:21.878Z",
+      "createdAt": "2026-02-10T07:08:21.878Z",
+      "role": "workflow:owner",
+      "workflowId": "Zp5TEvmh37ZJmuFF",
+      "projectId": "NYCiBON2iY0FYcEe",
+      "project": {
+        "updatedAt": "2025-10-24T04:46:07.278Z",
+        "createdAt": "2025-10-24T04:39:23.125Z",
+        "id": "NYCiBON2iY0FYcEe",
+        "name": "N8n client <n8nfordezhynelabs@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "d98a5c50-3b42-4ce4-b7e1-f065af4167d7"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-05-29T17:40:35.000Z",
+    "createdAt": "2026-05-29T17:40:27.883Z",
+    "versionId": "f63509f0-c9b5-4ca3-ba5c-94c3f78ea9ad",
+    "workflowId": "Zp5TEvmh37ZJmuFF",
+    "nodes": [
+      {
+        "parameters": {
+          "jsCode": "// input: { success: true, links: [ { url: \"...\" } ] }\n\nconst links = $json.links || [];\nconst seen = new Set();\n\nconst blockedKeywords = [\n  \"/press-blog\",\n  \"/newsletter\",\n  \"/assets-vault\",\n  \"press\",\n  \"gallery\",\n  \"project\",\n  \"newsletter\",\n  \"blog\",\n  \"events\",\n  \"news-and-paper\"\n];\n\nreturn links\n  .filter(link => {\n    let url = link.url;\n    if (!url) return false;\n\n    // \u274c Remove blocked keywords\n    for (const keyword of blockedKeywords) {\n      if (url.includes(keyword)) return false;\n    }\n\n    // \u274c Remove XML files\n    if (url.includes(\".xml\")) return false;\n\n    // \ud83d\udd04 Normalize trailing slash\n    url = url.endsWith(\"/\") ? url.slice(0, -1) : url;\n\n    // \u274c Remove duplicates\n    if (seen.has(url)) return false;\n    seen.add(url);\n\n    // Save normalized URL back\n    link.url = url;\n    return true;\n  })\n  .map(link => {\n    return {\n      url: link.url\n    };\n  });\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          640,
+          80
+        ],
+        "id": "64875457-3f9e-499c-87c0-7108d88a7690",
+        "name": "Code in JavaScript1"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          208,
+          336
+        ],
+        "id": "71e44f01-ff3d-49cd-918d-30e7a1711573",
+        "name": "When clicking \u2018Execute workflow\u2019"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          864,
+          336
+        ],
+        "id": "eb2e52cc-71f4-458c-ba91-2986d50c36df",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "f84fa14c-2e29-46ef-a914-2267eb52b815",
+                "name": "html",
+                "value": "={{ $json.data ?? $json.body ?? $json.html ?? '' }}",
+                "type": "string"
+              },
+              {
+                "id": "096f51e1-e470-4fde-8d62-3338ffcc4f6b",
+                "name": "url",
+                "value": "={{ $json.url ?? $('Loop Over Items').item.json.url }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1344,
+          256
+        ],
+        "id": "acbf6c44-38ab-4aa8-b8f2-bb319922c9c6",
+        "name": "Edit Fields1"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "const j = $json;\n// HTTP errors from continueOnFail land here as { error: {...} }\nif (j.error || !j.html || typeof j.html !== 'string') {\n  return { url: j.url, project_id: j.project_id, text: '' };\n}\nconst text = j.html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, '')\n  .replace(/<!--([\\s\\S]*?)-->/g, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ')\n  .replace(/&amp;/g, '&')\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"')\n  .replace(/\\s+/g, ' ')\n  .trim();\nreturn { url: j.url, project_id: j.project_id, text };\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1536,
+          256
+        ],
+        "id": "ae5899a3-bc67-40fb-86f0-58473e845258",
+        "name": "Code in JavaScript2"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "aa3e5022-2d6d-43f6-bf87-9de112a3345f",
+                "leftValue": "={{$json.text.length > 50}}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1760,
+          256
+        ],
+        "id": "fd597bd8-45d7-4b53-bc66-69b615d97fc2",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = $json.text || \"\";\nconst text = raw.replace(/\\s+/g, \" \").trim(); // clean whitespace\nconst chunkSize = 1000;\nconst overlap = 200;\n\nconst chunks = [];\nlet i = 0;\n\nwhile (i < text.length) {\n  const chunk = text.slice(i, i + chunkSize).trim();\n\n  // Only save useful chunks\n  if (chunk.length > 50) {\n    chunks.push({\n      content: chunk,\n      url: $json.url,\n      project_id: $json.project_id\n    });\n  }\n\n  i += chunkSize - overlap;\n}\n\nreturn chunks;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1984,
+          256
+        ],
+        "id": "b36d6c70-6dfa-4edf-a366-96d982638cc3",
+        "name": "Code in JavaScript3"
+      },
+      {
+        "parameters": {
+          "mode": "insert",
+          "pineconeIndex": {
+            "__rl": true,
+            "value": "dandrewbakery",
+            "mode": "list",
+            "cachedResultName": "dandrewbakery"
+          },
+          "options": {
+            "clearNamespace": false,
+            "pineconeNamespace": "imitate"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+        "typeVersion": 1.3,
+        "position": [
+          2208,
+          336
+        ],
+        "id": "49638253-bde2-4cd8-b864-4412fa000451",
+        "name": "Pinecone Vector Store1",
+        "credentials": {
+          "pineconeApi": {
+            "id": "sCJplZzPLdKi6pSE",
+            "name": "N8NDezhynelabs PineconeApi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          2208,
+          560
+        ],
+        "id": "55615dee-00f2-4196-84bd-2a05f645ea73",
+        "name": "Embeddings OpenAI",
+        "credentials": {
+          "openAiApi": {
+            "id": "hnEfbtGYa8aZqYlL",
+            "name": "n8nfordezhynelabs OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {
+            "metadata": {
+              "metadataValues": [
+                {
+                  "name": "url",
+                  "value": "={{ $json.url }}"
+                },
+                {
+                  "name": "content",
+                  "value": "={{ $json.content }}"
+                }
+              ]
+            }
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+        "typeVersion": 1.1,
+        "position": [
+          2352,
+          560
+        ],
+        "id": "ba00bc64-fbd1-44b3-b970-6695029a3045",
+        "name": "Default Data Loader"
+      },
+      {
+        "parameters": {
+          "operation": "map",
+          "url": "https://imtiaz.ae/",
+          "includeSubdomains": true,
+          "requestOptions": {}
+        },
+        "type": "@mendable/n8n-nodes-firecrawl.firecrawl",
+        "typeVersion": 1,
+        "position": [
+          416,
+          80
+        ],
+        "id": "118271cb-95b9-46c6-a770-8ed94e54d0b7",
+        "name": "Map a website and get urls1",
+        "retryOnFail": true,
+        "credentials": {
+          "firecrawlApi": {
+            "id": "xhOuWbz1t0R1vO6Q",
+            "name": "N8Nfordezhynelabs Firecrawl account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.url }}",
+          "options": {
+            "redirect": {
+              "redirect": {
+                "followRedirects": true
+              }
+            }
+          }
+        },
+        "id": "07cbc9e5-e1ae-44b9-8f55-47fea19fb199",
+        "name": "Scrape Website URL3",
+        "type": "n8n-nodes-base.httpRequest",
+        "position": [
+          1152,
+          208
+        ],
+        "typeVersion": 3,
+        "retryOnFail": true,
+        "waitBetweenTries": 2000,
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "contextWindowLength": 10
+        },
+        "id": "32fe6abf-5ab8-4738-965f-e96e8d243351",
+        "name": "Chat Memory",
+        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+        "typeVersion": 1.3,
+        "position": [
+          992,
+          1376
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Generates a unique ticket ID in the format TKT-YYYYMMDD-XXXX where XXXX is a random 4-digit number. Call this tool before creating a support ticket.",
+          "jsCode": "const now = new Date();\nconst dateStr = now.toISOString().slice(0,10).replace(/-/g, \"\");\nconst random = Math.floor(1000 + Math.random() * 9000);\nconst ticket_id = `TKT-${dateStr}-${random}`;\nreturn ticket_id;"
+        },
+        "id": "477365c0-e7f9-44a2-bb89-d4b0aab3fd1e",
+        "name": "Generate Ticket ID",
+        "type": "@n8n/n8n-nodes-langchain.toolCode",
+        "typeVersion": 1.3,
+        "position": [
+          1120,
+          1376
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-4.1-mini",
+            "mode": "list",
+            "cachedResultName": "gpt-4.1-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "id": "cead8809-f31a-4751-a5f8-b912ee7b89f1",
+        "name": "OpenAI Chat Model3",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          832,
+          1376
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "hnEfbtGYa8aZqYlL",
+            "name": "n8nfordezhynelabs OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "value": "10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0",
+            "mode": "list",
+            "cachedResultName": "Dezhyne Labs",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 1528801260,
+            "mode": "list",
+            "cachedResultName": "APPOINTMENTS",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10_3FSuP_nH2SyaMjsrK48mWrR6uQ27ztWgxFqEpyKM0/edit#gid=1528801260"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Date ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Date_', ``, 'string') }}",
+              "Full Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Full_Name', ``, 'string') }}",
+              "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+              "Phone number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone_number', ``, 'string') }}",
+              "Query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "Date ",
+                "displayName": "Date ",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Full Name",
+                "displayName": "Full Name",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Email",
+                "displayName": "Email",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Phone number",
+                "displayName": "Phone number",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Query",
+                "displayName": "Query",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "id": "dd8e5c30-1c00-4e03-ab69-77eb2d0f56da",
+        "name": "Appointments",
+        "type": "n8n-nodes-base.googleSheetsTool",
+        "position": [
+          1248,
+          1376
+        ],
+        "typeVersion": 4.5,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "ihYahMZX0jUkqMPG",
+            "name": "n8nfordezhynelabs Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "calendar": {
+            "__rl": true,
+            "value": "n8nfordezhynelabs@gmail.com",
+            "mode": "list",
+            "cachedResultName": "n8nfordezhynelabs@gmail.com"
+          },
+          "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+          "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+          "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+          "options": {
+            "timeZone": {
+              "__rl": true,
+              "value": "Asia/Dubai",
+              "mode": "list",
+              "cachedResultName": "Asia/Dubai"
+            }
+          }
+        },
+        "id": "01bb9214-c562-4070-a543-d9c2d68d3e2f",
+        "name": "Check Availability",
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "position": [
+          1376,
+          1376
+        ],
+        "typeVersion": 1.3,
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "AryL1fS3jjwZdFqt",
+            "name": "N8NDezhyne Labs Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "calendar": {
+            "__rl": true,
+            "value": "=n8nfordezhynelabs@gmail.com",
+            "mode": "id",
+            "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+          },
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "additionalFields": {
+            "attendees": [
+              "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('attendees0_Attendees', ``, 'string') }}"
+            ],
+            "color": "2",
+            "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+            "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}",
+            "visibility": "public"
+          }
+        },
+        "id": "b5c05762-d3a8-416b-a467-0ca59afc9aa6",
+        "name": "Create Event",
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "position": [
+          1504,
+          1376
+        ],
+        "typeVersion": 1.3,
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "AryL1fS3jjwZdFqt",
+            "name": "N8NDezhyne Labs Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "calendar": {
+            "__rl": true,
+            "value": "=n8nfordezhynelabs@gmail.com",
+            "mode": "id",
+            "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+          },
+          "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+          "options": {}
+        },
+        "id": "58d15881-4583-482b-bf73-52be508c353f",
+        "name": "Retreive Event",
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "position": [
+          1632,
+          1376
+        ],
+        "typeVersion": 1.3,
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "AryL1fS3jjwZdFqt",
+            "name": "N8NDezhyne Labs Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "calendar": {
+            "__rl": true,
+            "value": "=n8nfordezhynelabs@gmail.com",
+            "mode": "id",
+            "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+          },
+          "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', `Event ID of event that needs to be rescheduled`, 'string') }}",
+          "updateFields": {
+            "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+            "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+            "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+            "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+          }
+        },
+        "id": "dee85c4a-d17a-4ade-b5ee-fb9603e5524e",
+        "name": "Update Event",
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "position": [
+          1760,
+          1376
+        ],
+        "typeVersion": 1.3,
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "AryL1fS3jjwZdFqt",
+            "name": "N8NDezhyne Labs Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "delete",
+          "calendar": {
+            "__rl": true,
+            "value": "=n8nfordezhynelabs@gmail.com",
+            "mode": "id",
+            "__regex": "(^[a-zA-Z0-9.!#$%&\u2019*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+          },
+          "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+          "options": {}
+        },
+        "id": "756d80d0-bff2-4a64-8fae-d2bf4664323f",
+        "name": "Delete Event",
+        "type": "n8n-nodes-base.googleCalendarTool",
+        "position": [
+          1888,
+          1376
+        ],
+        "typeVersion": 1.3,
+        "credentials": {
+          "googleCalendarOAuth2Api": {
+            "id": "AryL1fS3jjwZdFqt",
+            "name": "N8NDezhyne Labs Google Calendar account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {
+            "systemMessage": "=You are **Alicia**, the Primary Orchestrator Agent for Imtiaz Developments, a luxury real estate developer in Dubai.\n\nToday's date is {{ $now.format('yyyy-MM-dd') }}.\nThis date is the ONLY reference for interpreting relative dates (today, tomorrow, next week, etc.).\n\n========================\nPRIMARY KNOWLEDGE RULE\n========================\n\nALL business-related information MUST come from TOOLS.\n\nThis includes:\n- Properties and projects\n- Communities and locations\n- Amenities and features\n- Company information\n- Website content\n- Policies\n- FAQs\n- Pricing\n- Availability\n- Contact information\n\n\u274c Memory must NEVER be used for the above.\n\u274c If a relevant tool exists, you MUST use it.\n\u274c Tool output is the ONLY source of truth.\n\n========================\nPINECONE KNOWLEDGE TOOL (CRITICAL)\n========================\n\nUse **Pinecone Vector Store** whenever the user asks ANYTHING related to:\n- Properties and projects\n- Communities and locations\n- Amenities and features\n- What is offered\n- Company or website information\n- Policies, FAQs, pricing, availability\n- \"What properties do you have?\", \"What is available?\", \"Tell me about your projects\"\n- Property recommendations based on user needs\n\nDo NOT use Pinecone for:\n- Viewing appointment booking\n- Calendar availability checks\n\nIf Pinecone returns:\n- No results\n- Empty response\n- Error / timeout\n\nTreat it as **NOT AVAILABLE**.\n\nNever infer or assume missing information.\n\n========================\nPROPERTY SEARCH QUERY STRATEGY\n========================\n\nWhen user asks for property recommendations based on their profile, use MULTIPLE focused Pinecone queries:\n\n**User asks: \"I work in Business Bay, want modern apartment\"**\n\nQuery Pinecone with:\n1. \"Properties Jumeirah Village Circle JVC central location\"\n2. \"Modern apartments young professionals amenities built-in office workspace\"\n3. \"Studios 1 bedroom apartments connectivity central Dubai\"\n\n**User asks: \"Family with kids, need schools nearby\"**\n\nQuery Pinecone with:\n1. \"Family-friendly communities kids playground children amenities\"\n2. \"Properties near schools educational facilities\"\n3. \"2 bedroom 3 bedroom apartments spacious family\"\n\nThen synthesize results and prioritize based on:\n- Location match (which is actually closest/best connected to their needs)\n- Lifestyle match (amenities they care about)\n- Unit types that fit their profile\n\n========================\nLOCATION & GEOGRAPHY ACCURACY (CRITICAL)\n========================\n\nWhen answering questions about location, commute, or proximity:\n\n1. NEVER say a property is \"in [Area X]\" unless it is ACTUALLY located in that area.\n   \u274c WRONG: \"Properties in Business Bay area\" (when they're in JVC or Dubai Islands)\n   \u2705 CORRECT: \"Properties well-connected to Business Bay\" or \"near Business Bay\"\n\n2. When user mentions where they work/live, ALWAYS consider:\n   - Actual location of each property\n   - Commute distance and connectivity\n   - Lifestyle match (urban vs waterfront vs residential)\n\n3. Be explicit about actual locations:\n   \u2705 \"Pearl House is located in Jumeirah Village Circle (JVC), which is well-connected to Business Bay\"\n   \u2705 \"Beach Walk Residence is on Dubai Islands, offering waterfront living but a longer commute to central areas\"\n\n4. PROXIMITY & COMMUTE DATA HANDLING:\n\n   If Pinecone returns property info BUT NO commute/distance data:\n   \n   Do NOT make up commute times or proximity claims.\n   \n   Instead, say:\n   \"[Property X] is located in [Actual Area]. While I don't have exact commute times to [User's Location], [Area] is generally well-connected to central Dubai.\"\n   \n   If user specifically asks about commute and you don't have data:\n   \"I don't have the exact commute time from [Community] to [User's Location] in my knowledge base. However, [Community] is located in [Area]. Would you like me to schedule a viewing so our sales team can provide you with detailed connectivity information?\"\n   \n   NEVER say:\n   - \"It's very close to [Area]\" (unless confirmed in knowledge base)\n   - \"Just 10 minutes away\" (unless you have this data)\n   - \"In the [Area] area\" (when it's actually in a different location)\n\n========================\nPERSONALIZED RECOMMENDATIONS (MANDATORY)\n========================\n\nWhen user shares their profile (work location, lifestyle, family status, budget), you MUST:\n\n1. PRIORITIZE, don't just list.\n   - Start with the BEST match based on their situation\n   - Then offer alternatives with clear trade-offs\n\n2. EXPLAIN WHY each recommendation fits them:\n   \u274c WRONG: \"Pearl House has gym and pool\" (generic feature list)\n   \u2705 CORRECT: \"Pearl House in JVC is ideal for you because it has built-in office workspace (great for remote work days) and it's centrally located for an easy commute to Business Bay\"\n\n3. Call out TRADE-OFFS when multiple options exist:\n   - \"If you prefer shorter commute \u2192 [Option A in JVC]\"\n   - \"If you prefer waterfront lifestyle and don't mind longer commute \u2192 [Option B in Dubai Islands]\"\n\n4. Match amenities to persona:\n   - **Young professional** \u2192 highlight: gym, co-working spaces, built-in office, connectivity, modern design, furnished units\n   - **Family with kids** \u2192 highlight: kids' play areas, schools nearby, safe community, spacious units, family amenities\n   - **Investor** \u2192 highlight: rental demand, ROI potential, handover date, location appreciation, property management\n\n========================\nRECOMMENDATION RESPONSE FORMAT\n========================\n\nWhen recommending properties based on user profile, use this structure:\n\n**Format:**\n\n1. Acknowledge user's key requirements\n   \"Since you work in [Location] and prefer [Feature], here are communities that match your needs:\"\n\n2. Primary recommendation (best match)\n   \"**[Community Name] ([Actual Location])**\"\n   - Why it's the best fit for their situation (2-3 sentences)\n   - 2-3 key features relevant to their profile\n   - Clear location context and connectivity\n   - Link to property page\n\n3. Alternative options (if applicable)\n   \"**Alternative: [Community Name] ([Actual Location])**\"\n   - Why it's also suitable + what's the trade-off\n   - Link to property page\n\n4. Qualifying question to narrow further\n   \"To help you choose between these options, could you tell me:\n   - Your budget range?\n   - [Relevant clarifying question based on their profile]?\"\n\n**Example (LEARN FROM THIS):**\n\nUser: \"I'm a young professional working in Business Bay and prefer a modern apartment.\"\n\n\u2705 CORRECT Response:\n\"Since you work in Business Bay and prefer modern apartments, here's what suits you best:\n\n**Pearl House II (Jumeirah Village Circle)** \u2013 This is your best match because JVC is well-connected to Business Bay, making your commute easier. Pearl House II offers fully furnished studios and 1-bedrooms with built-in office workspaces\u2014perfect for remote work days\u2014plus gym, clubhouse, and modern interiors. [View Pearl House II](link)\n\n**Alternative: Beach Walk Residence (Dubai Islands)** \u2013 If you're open to a waterfront lifestyle with a longer commute to Business Bay, this offers beach access, infinity pools, and resort-style amenities. [View Beach Walk](link)\n\nWould you prefer the option closer to your work, or are you interested in the waterfront lifestyle?\"\n\n\u274c WRONG Response:\n\"Modern apartments in Business Bay area:\n\u2022 Beach Walk Residence \u2013 studios to 2BR, pools, gym\n\u2022 Pearl House \u2013 studios and 1BR, fully furnished\n\u2022 Sunset Bay 5 \u2013 1-3BR, rooftop pool\nAll have modern amenities. Let me know if you want more info!\"\n\nWhy it's bad:\n- Says \"in Business Bay area\" when none are actually in Business Bay\n- Just lists features without explaining why they fit a young professional\n- Doesn't prioritize or explain trade-offs\n- Doesn't help user make a decision\n\n========================\nMEMORY USAGE (VERY LIMITED)\n========================\n\nMemory may be used ONLY for:\n- Name\n- Email\n- Phone number\n\nAND ONLY AFTER:\n- A successful viewing appointment booking\n\nMemory is NOT allowed for:\n- Properties\n- Projects\n- Communities\n- Company info\n- Availability\n- Policies\n- Appointments\n\n========================\nGREETING RULE\n========================\n\nIf the user message is ONLY a greeting (Hi / Hello / Hey):\n\nReply EXACTLY:\n\"Hi! How can I help you today?\"\n\nNo tools.\nNo extra text.\n\n========================\nPROPERTY INQUIRY (STRICT OVERRIDE)\n========================\n\nThis section OVERRIDES all other logic for properties.\n\nALWAYS call Pinecone for ANY property-related question.\n\n--------------------------------\nA) SPECIFIC PROPERTY/COMMUNITY QUERY\n--------------------------------\nExamples:\n- \"Do you have properties in JVC?\"\n- \"Tell me about Pearl House\"\n- \"What's available in Dubai Islands?\"\n\nFLOW:\n1. Call Pinecone using the EXACT property/community name from the user.\n2. Check if matching property exists.\n\nRESPONSES:\n\nIf FOUND:\n\"Yes, we do have properties in [Location/Community]. [Brief 2-3 sentence summary of what's available]. [Link to property page]\"\n\nIf NOT FOUND:\n\"I don't have information about properties in [Location] in our current portfolio. Our active communities include Dubai Islands, Jumeirah Village Circle (JVC), Dubailand, and Meydan. Would you like to explore any of these areas?\"\n\nRules:\n- Be conversational, not robotic\n- Provide links wherever available\n- If location is outside Dubai, politely clarify we focus on Dubai\n\n--------------------------------\nB) PROPERTY LIST / GENERAL QUERY\n--------------------------------\nExamples:\n- \"What properties do you have?\"\n- \"Show me available projects\"\n- \"What communities do you develop?\"\n\nFLOW:\n1. Call Pinecone with a broad query like:\n   \"List all available properties communities projects\"\n2. Extract property/community names + short descriptions.\n\nRESPONSES:\n\nIf properties FOUND:\n\"Here are our current communities and projects:\n- **[Community Name]** ([Location]) \u2013 [short description (max 25 words)] [Link]\n- **[Community Name]** ([Location]) \u2013 [short description] [Link]\n\nWhich type of property or lifestyle are you looking for? I can help you narrow this down.\"\n\nIf NO properties FOUND (unlikely):\n\"I'm having trouble retrieving our project list right now. Would you like me to connect you with our sales team?\"\n\nRules:\n- Group by location if helpful\n- Keep descriptions benefit-focused, not just features\n- Always end with qualifying question\n\n========================\nTIME FORMAT HANDLING (STRICT)\n========================\n\nWhen users mention time, ALWAYS normalize to **24-hour format** before using any appointment tools.\n\nYOU MUST CONVERT:\n- \"1 pm\" \u2192 13:00\n- \"1:30 pm\" \u2192 13:30\n- \"10 am\" \u2192 10:00\n- \"10:15 am\" \u2192 10:15\n- \"12 pm / noon\" \u2192 12:00\n- \"12 am / midnight\" \u2192 00:00\n- \"1\u20132 pm\" \u2192 13:00 to 14:00\n- \"4 to 5pm\" \u2192 16:00 to 17:00\n- \"3:30\u20135 pm\" \u2192 15:30 to 17:00\n\nRules:\n- Default timezone: UAE (Gulf Standard Time, UTC+4)\n- If unclear (example: \"book for 7\"):\n  Ask: \"Is that 7 AM or 7 PM?\"\n\nALL tool calls must use ISO datetime format:\nYYYY-MM-DDTHH:mm:00\n\n========================\nVIEWING APPOINTMENTS & DATE DISAMBIGUATION\n========================\n\nViewing appointments are TOOL-FIRST.\n\n--------------------------------\nDATE CLARIFICATION (MANDATORY)\n--------------------------------\n\nIf the user provides an ambiguous date:\nExamples:\n- \"Book viewing on Dec 7\"\n- \"Schedule visit on 7th\"\n\nYou MUST ask:\n\"Do you mean February 7, 2026 or December 7, 2026?\"\n\nNever guess.\nNever infer month or year.\n\n--------------------------------\nBOOKING FLOW (STRICT)\n--------------------------------\n\n1. Normalize date using today's date {{ $now.format('yyyy-MM-dd') }}.\n2. Normalize time to 24-hour format.\n3. IDENTIFY the specific property/community for viewing.\n4. ALWAYS call **Check Availability** tool.\n5. If unavailable \u2192 inform user and ask for another time.\n6. If available \u2192 collect required details:\n   - Full name\n   - Email\n   - Phone number (with country code)\n   - Property/community they want to view\n7. Ask for explicit confirmation.\n8. ONLY THEN call **Create Event**.\n\nNever skip availability checks.\nNever book from memory.\n\nExample confirmation:\n\"Just to confirm: I'll book a viewing for [Property Name] on [Day, Date] at [Time] under the name [Name], email [Email], phone [Phone]. Is this correct?\"\n\n========================\nSUPPORT & INQUIRIES\n========================\n\n- General inquiry \u2192 call **Appointments** tool to log inquiry\n- Complex request or escalation \u2192 offer to connect with sales team\n- Technical issue with website \u2192 offer support ticket\n\nNever answer from memory.\n\n========================\nEMAIL & CONTACT RULE\n========================\n\nEmail and phone may be:\n- Requested\n- Stored\n- Shared\n\nONLY for:\n- Viewing appointment bookings\n- Legitimate inquiry follow-ups\n\n\u274c Never share personal contact info for general property questions.\n\u2705 Use appointment booking flow to capture contact details properly.\n\n========================\nFAILURE RULE (NON-NEGOTIABLE)\n========================\n\nIf ANY required tool:\n- Errors\n- Times out\n- Returns empty or invalid data\n\nReply using this template (adapt based on context):\n\nFor property info failures:\n\"I'm having trouble retrieving that information right now. Would you like me to schedule a call with our sales team who can provide you with detailed information?\"\n\nFor appointment booking failures:\n\"I'm having trouble accessing the calendar right now. Let me collect your details and our team will confirm your viewing appointment within 2 hours. May I have your name, email, and phone number?\"\n\nNever expose technical details like \"Pinecone timeout\" or \"Calendar API error\".\n\n========================\nLANGUAGE & TONE\n========================\n\n- Conversational and professional (real estate agent style)\n- Friendly and helpful\n- Clear and confident\n- Use short paragraphs for readability\n- Be consultative, not pushy\n- Never robotic or scripted\n- Never expose internal tool names (no \"Pinecone\", no \"vector store\", no \"tool failed\")\n\nThink of yourself as a knowledgeable sales consultant, not a bot.\n\n========================\nSTRICT PROHIBITIONS\n========================\n\n\u274c No answers without tools for property/company information\n\u274c No memory-based knowledge about properties/company\n\u274c No internal tool names exposed to users\n\u274c No assumptions about location, commute, or features not in knowledge base\n\u274c No saying \"in [Area]\" when property is in a different location\n\u274c No generic brochure-style lists without personalization\n\u274c No made-up pricing, availability, or specifications\n\n========================\nLINK FORMATTING RULE (MANDATORY)\n========================\n\nWhenever a link is included in a response:\n\n1. NEVER write \"Click here\" as plain text.\n2. ALWAYS format links using Markdown anchor syntax:\n\n   [Link Text](URL)\n\n3. The link text MUST be descriptive.\n   Allowed examples:\n   - View [Property Name]\n   - Explore [Community Name]\n   - Check [Project] details\n   - See [Community] amenities\n   - Learn more about [Property]\n\n4. Raw URLs MUST NOT appear in the response.\n\n5. Links must come ONLY from tool output.\n   Never invent or modify URLs.\n\n6. Example (CORRECT):\n   You can explore Pearl House II and check unit availability here: [View Pearl House II](https://imtiaz.ae/property/pearl-house-ii-by-imtiaz)\n\n7. Example (INCORRECT):\n   You can check here: Click here\n   Visit: https://imtiaz.ae/property/pearl-house-ii-by-imtiaz\n\nPLATFORM NOTE:\n- If the output channel is WhatsApp or SMS (plain text only),\n  hyperlinks are NOT supported.\n  In that case, output the FULL URL on its own line with a descriptive label:\n  \n  \"View Pearl House II:\n  https://imtiaz.ae/property/pearl-house-ii-by-imtiaz\"\n\n========================\nEND OF SYSTEM PROMPT\n========================\n",
+            "maxIterations": 10,
+            "returnIntermediateSteps": false
+          }
+        },
+        "id": "04b1d7ac-195b-40c0-a1df-cbd68938d4d1",
+        "name": "Customer Support Agent",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3,
+        "position": [
+          1360,
+          1136
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "retrieve-as-tool",
+          "toolDescription": "=this is a real estate website\n",
+          "pineconeIndex": {
+            "__rl": true,
+            "value": "dandrewbakery",
+            "mode": "list",
+            "cachedResultName": "dandrewbakery"
+          },
+          "topK": 10,
+          "options": {
+            "pineconeNamespace": "imitate"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+        "typeVersion": 1.3,
+        "position": [
+          2016,
+          1392
+        ],
+        "id": "ba2c8c3f-326f-4299-885f-5cbdc6cb6643",
+        "name": "Pinecone Vector Store2",
+        "credentials": {
+          "pineconeApi": {
+            "id": "sCJplZzPLdKi6pSE",
+            "name": "N8NDezhynelabs PineconeApi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          2016,
+          1584
+        ],
+        "id": "ea93208f-bf9e-4ab3-a6cb-699776dcaabd",
+        "name": "Embeddings OpenAI2",
+        "credentials": {
+          "openAiApi": {
+            "id": "hnEfbtGYa8aZqYlL",
+            "name": "n8nfordezhynelabs OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "public": true,
+          "mode": "webhook",
+          "options": {
+            "allowedOrigins": "*",
+            "responseMode": "responseNode"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          592,
+          1152
+        ],
+        "id": "f35f0139-b75c-44b8-9a72-9eacf776d4cf",
+        "name": "When chat message received",
+        "webhookId": "9dbadb91-434e-4c43-8c1b-a797ec107646"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "{\n  \"output\": \"Hi, how can I help you today?\"\n}",
+          "options": {}
+        },
+        "id": "3cfe6ee8-85a1-4f25-841d-afb423383e2d",
+        "name": "Respond With Initial Message",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "position": [
+          1120,
+          1008
+        ],
+        "typeVersion": 1.1
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "158a0b91-534d-4745-b10e-8a7c97050861",
+                "operator": {
+                  "type": "string",
+                  "operation": "exists",
+                  "singleValue": true
+                },
+                "leftValue": "={{ $json.chatInput }}",
+                "rightValue": ""
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "2728fa48-f3d1-469f-b042-976a6e1cc680",
+        "name": "If1",
+        "type": "n8n-nodes-base.if",
+        "position": [
+          880,
+          1152
+        ],
+        "typeVersion": 2.2
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "e8d05ca7-44dc-41e0-a241-eb666015d900",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "position": [
+          1920,
+          1136
+        ],
+        "typeVersion": 1.1
+      },
+      {
+        "parameters": {
+          "content": "##  Website Scraper",
+          "height": 784,
+          "width": 2512
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          0,
+          0
+        ],
+        "typeVersion": 1,
+        "id": "6177b947-351d-4e78-b36c-839e2adb8a48",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [\n  { url: }\n];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          576,
+          336
+        ],
+        "id": "8bac2ac0-8e3d-4b13-bfcd-269c4398dccc",
+        "name": "Code in JavaScript5"
+      },
+      {
+        "parameters": {
+          "jsCode": "let text = $json.output || \"\";\n\n// Force clean bullet formatting\ntext = text\n  .replace(/\\s-\\s/g, '\\n\u2022 ')\n  .replace(/Eligibility conditions:/i, '\\n\\n**Eligibility conditions:**')\n  .replace(/Non-returnable items include:/i, '\\n\\n**Non-returnable items include:**');\n\n// Ensure link is clickable (Markdown)\ntext = text.replace(\n  /(https?:\\/\\/www\\.blushu\\.in\\/policies\\/refund-policy)/g,\n  '[View full Refund Policy]($1)'\n);\n\nreturn {\n  output: text.trim()\n};\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1712,
+          1136
+        ],
+        "id": "e227d897-a0b7-4e7b-bf18-879c2f4aeed4",
+        "name": "Code in JavaScript6"
+      },
+      {
+        "parameters": {
+          "amount": 2
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          992,
+          208
+        ],
+        "id": "b202e220-5657-4ee6-bdde-c1f2d15c593a",
+        "name": "Wait",
+        "webhookId": "0ff6bac9-857c-4689-8a9e-d00bbf1d37e6"
+      }
+    ],
+    "connections": {
+      "When clicking \u2018Execute workflow\u2019": {
+        "main": [
+          [
+            {
+              "node": "Map a website and get urls1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Wait",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields1": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript2": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript3",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript3": {
+        "main": [
+          [
+            {
+              "node": "Pinecone Vector Store1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pinecone Vector Store1": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Embeddings OpenAI": {
+        "ai_embedding": [
+          [
+            {
+              "node": "Pinecone Vector Store1",
+              "type": "ai_embedding",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Default Data Loader": {
+        "ai_document": [
+          [
+            {
+              "node": "Pinecone Vector Store1",
+              "type": "ai_document",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Map a website and get urls1": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Scrape Website URL3": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chat Memory": {
+        "ai_memory": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate Ticket ID": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model3": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Appointments": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Availability": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Event": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Retreive Event": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Event": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete Event": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Customer Support Agent": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript6",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pinecone Vector Store2": {
+        "ai_tool": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Embeddings OpenAI2": {
+        "ai_embedding": [
+          [
+            {
+              "node": "Pinecone Vector Store2",
+              "type": "ai_embedding",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When chat message received": {
+        "main": [
+          [
+            {
+              "node": "If1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If1": {
+        "main": [
+          [
+            {
+              "node": "Customer Support Agent",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Respond With Initial Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript5": {
+        "main": [
+          []
+        ]
+      },
+      "Code in JavaScript6": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript1": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait": {
+        "main": [
+          [
+            {
+              "node": "Scrape Website URL3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "N8n client",
+    "name": "Version f63509f0",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-05-29T17:40:35.341Z",
+        "id": 325,
+        "workflowId": "Zp5TEvmh37ZJmuFF",
+        "versionId": "f63509f0-c9b5-4ca3-ba5c-94c3f78ea9ad",
+        "event": "activated",
+        "userId": "d98a5c50-3b42-4ce4-b7e1-f065af4167d7"
+      }
+    ]
+  }
+}

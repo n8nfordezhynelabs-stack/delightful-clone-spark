@@ -28,25 +28,37 @@ const N8nChat = () => {
       div.textContent = text;
       let escaped = div.innerHTML;
 
-      // Convert markdown links
+      // Inline markdown: links + bold
       escaped = escaped.replace(
         /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
         '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
       );
-      // Convert bold
       escaped = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      // Convert bullet points
-      escaped = escaped.replace(
-        /^(?:•|-)\s+(.*)$/gm,
-        "<li>$1</li>"
-      );
-      escaped = escaped.replace(
-        /(<li>.*<\/li>)/gs,
-        "<ul>$1</ul>"
-      );
-      // Line breaks
-      escaped = escaped.replace(/\n/g, "<br>");
-      return escaped;
+
+      // Block-level: walk line-by-line so bullets group cleanly and don't
+      // get <br>-injected between <li>s.
+      const lines = escaped.split("\n");
+      const out: string[] = [];
+      let inList = false;
+      const bulletRe = /^\s*(?:[-•*])\s+(.*)$/;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const m = line.match(bulletRe);
+        const isLast = i === lines.length - 1;
+        if (m) {
+          if (!inList) { out.push("<ul>"); inList = true; }
+          out.push(`<li>${m[1]}</li>`);
+        } else {
+          if (inList) { out.push("</ul>"); inList = false; }
+          if (line.trim() === "") {
+            if (!isLast) out.push("<br>");
+          } else {
+            out.push(isLast ? line : line + "<br>");
+          }
+        }
+      }
+      if (inList) out.push("</ul>");
+      return out.join("");
     }
 
     // Build widget

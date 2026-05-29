@@ -84,6 +84,24 @@ The `<N8nChat />` component must remain at the top level of App.tsx (inside Quer
 - Renders a floating chat icon + expandable chat box.
 - **Do not move, remove, or heavily refactor without testing the DOM widget behavior.**
 
+## N8n Workflow Development
+
+When creating or editing n8n workflows, use these skills for guidance:
+- **/n8n-expression-syntax** — n8n expression language, variable access, data manipulation
+- **/n8n-code-javascript** — JavaScript node code patterns, async handling, error handling
+- **/n8n-code-python** — Python node code patterns (if used)
+- **/n8n-node-configuration** — Node parameter setup, connection logic, credential handling
+- **/n8n-validation-expert** — Data validation, error detection, workflow testing
+- **/n8n-workflow-patterns** — Best practices, performance optimization, batch processing
+- **/n8n-mcp-tools-expert** — MCP server integration, tool configuration
+
+**Key rules for n8n changes:**
+- Never modify credential IDs or secret values
+- Always add delays (`delayMs`) for HTTP requests to prevent rate limiting
+- Use batch sizes appropriately (1-10 items per batch for external APIs)
+- Filter invalid responses (404s, null data) before processing further
+- Test workflow execution fully before deploying to production
+
 ## Testing
 
 - **Framework**: Vitest (configured in vitest.config.ts).

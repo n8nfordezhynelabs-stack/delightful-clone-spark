@@ -1,0 +1,21 @@
+{
+  "parameters": {
+    "url": "={{ $json.url }}",
+    "options": {
+      "redirect": {
+        "redirect": {
+          "followRedirects": true
+        }
+      },
+      "delayMs": 2000,
+      "timeout": 15000
+    }
+  },
+  "id": "07cbc9e5-e1ae-44b9-8f55-47fea19fb199",
+  "name": "Scrape Website URL3",
+  "type": "n8n-nodes-base.httpRequest",
+  "position": [1088, 256],
+  "typeVersion": 3,
+  "retryOnFail": true,
+  "continueOnFail": true
+}

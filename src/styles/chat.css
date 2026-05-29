@@ -180,13 +180,21 @@
   text-decoration: underline;
 }
 
-.dex-bot ul {
-  padding-left: 18px;
-  margin: 6px 0;
+.dex-bot ul,
+.dex-chat-box .dex-bot ul {
+  padding-left: 20px !important;
+  margin: 6px 0 !important;
+  list-style: disc outside !important;
+  list-style-type: disc !important;
 }
 
-.dex-bot li {
-  margin-bottom: 6px;
+.dex-bot li,
+.dex-chat-box .dex-bot li {
+  margin-bottom: 6px !important;
+  display: list-item !important;
+  list-style: disc outside !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
 }
 
 .dex-user {
