@@ -9,7 +9,7 @@ const N8nChat = () => {
       "https://n8n.srv1082505.hstgr.cloud/webhook/9dbadb91-434e-4c43-8c1b-a797ec107646/chat";
     const webhookRoute = "general";
     const brandName = "Dezhyne Labs";
-    const brandLogo = "https://www.blushu.in/cdn/shop/files/2.png";
+    const brandLogo = "/logo.jpeg";
     const welcomeText = "Hi 👋 Welcome to Dezhyne Labs!";
     const responseTimeText = "We usually respond instantly";
 

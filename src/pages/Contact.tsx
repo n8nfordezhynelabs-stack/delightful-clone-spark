@@ -60,15 +60,15 @@ const Contact = () => {
                 <div className="space-y-6">
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Mail className="w-5 h-5 text-primary" /></div>
-                    <div><p className="text-muted-foreground text-sm">Email</p><p className="text-foreground font-medium">hello@dezhyne.com</p></div>
+                    <div><p className="text-muted-foreground text-sm">Protocol Email</p><p className="text-foreground font-medium">info@dezhyne.com</p><p className="text-muted-foreground text-xs mt-1">24h Response</p></div>
                   </div>
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><Phone className="w-5 h-5 text-primary" /></div>
-                    <div><p className="text-muted-foreground text-sm">Phone</p><p className="text-foreground font-medium">+1 (555) 123-4567</p></div>
+                    <div><p className="text-muted-foreground text-sm">Direct Line</p><p className="text-foreground font-medium">+91 6383875308</p><p className="text-muted-foreground text-xs mt-1">Ready to Sync</p></div>
                   </div>
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><MapPin className="w-5 h-5 text-primary" /></div>
-                    <div><p className="text-muted-foreground text-sm">Location</p><p className="text-foreground font-medium">123 Digital Street, San Francisco, CA</p></div>
+                    <div><p className="text-muted-foreground text-sm">Location</p><p className="text-foreground font-medium">Chennai, India</p><p className="text-muted-foreground text-xs mt-1">Mon-Fri 9AM - 6PM IST</p></div>
                   </div>
                 </div>
               </div>

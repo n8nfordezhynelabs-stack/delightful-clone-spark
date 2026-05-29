@@ -49,8 +49,8 @@ export const BlogPreview = () => {
         <div className="container-custom">
           <div className="text-center">
             <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-secondary rounded w-48 mx-auto" />
-              <div className="h-4 bg-secondary rounded w-64 mx-auto" />
+              <div className="h-8 bg-muted rounded w-48 mx-auto" />
+              <div className="h-4 bg-muted rounded w-64 mx-auto" />
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@ export const BlogPreview = () => {
               to={`/blog/${post.id}`}
               className="group block"
             >
-              <article className="bg-secondary/50 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 card-hover">
+              <article className="bg-muted rounded-2xl overflow-hidden border border-border hover:border-primary transition-all duration-300 card-hover">
                 {/* Image */}
                 <div className="relative aspect-video overflow-hidden">
                   <img

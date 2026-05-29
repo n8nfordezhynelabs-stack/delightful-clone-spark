@@ -11,14 +11,14 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #22d3ee, #38bdf8);
+  background: #8c2e47;
   border: none;
-  color: #000;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+  box-shadow: 0 4px 12px rgba(140, 46, 71, 0.3);
   transition: transform 0.3s;
 }
 
@@ -33,10 +33,10 @@
   right: 0;
   width: 380px;
   height: 600px;
-  background: radial-gradient(circle at top, #020617, #000);
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(34, 211, 238, 0.15);
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  box-shadow: 0 8px 32px rgba(140, 46, 71, 0.15);
+  border: 1px solid rgba(140, 46, 71, 0.2);
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -52,8 +52,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  color: #f1f5f9;
-  border-bottom: 1px solid rgba(34, 211, 238, 0.1);
+  color: #1f2937;
+  border-bottom: 1px solid rgba(140, 46, 71, 0.1);
 }
 
 .dex-chat-header img {
@@ -68,19 +68,19 @@
 
 .dex-chat-header strong {
   font-size: 16px;
-  color: #f1f5f9;
+  color: #1f2937;
 }
 
 .dex-chat-header span {
   font-size: 12px;
-  color: #94a3b8;
+  color: #6b7280;
 }
 
 .dex-close {
   margin-left: auto;
   background: none;
   border: none;
-  color: #f1f5f9;
+  color: #1f2937;
   font-size: 22px;
   cursor: pointer;
   opacity: 0.6;
@@ -106,7 +106,7 @@
 .dex-welcome-text {
   font-size: 24px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: #1f2937;
   margin-bottom: 24px;
   line-height: 1.3;
 }
@@ -118,8 +118,8 @@
   gap: 8px;
   width: 100%;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #22d3ee, #38bdf8);
-  color: #020617;
+  background: #8c2e47;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -136,7 +136,7 @@
 
 .dex-response-text {
   font-size: 14px;
-  color: #94a3b8;
+  color: #6b7280;
   margin: 0;
 }
 
@@ -162,9 +162,9 @@
 }
 
 .dex-bot {
-  background: #020617;
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  color: #f1f5f9;
+  background: #f3f4f6;
+  border: 1px solid rgba(140, 46, 71, 0.2);
+  color: #1f2937;
   padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 10px;
@@ -176,7 +176,7 @@
 }
 
 .dex-bot a {
-  color: #22d3ee;
+  color: #8c2e47;
   text-decoration: underline;
 }
 
@@ -190,8 +190,8 @@
 }
 
 .dex-user {
-  background: linear-gradient(135deg, #22d3ee, #38bdf8);
-  color: #020617;
+  background: #8c2e47;
+  color: #ffffff;
   padding: 12px 16px;
   border-radius: 12px;
   margin-bottom: 10px;
@@ -199,7 +199,7 @@
   align-self: flex-end;
   font-size: 14px;
   line-height: 1.5;
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.2);
+  box-shadow: 0 4px 12px rgba(140, 46, 71, 0.2);
   word-wrap: break-word;
 }
 
@@ -213,7 +213,7 @@
 .dex-typing span {
   width: 6px;
   height: 6px;
-  background: #94a3b8;
+  background: #8c2e47;
   border-radius: 50%;
   animation: dex-blink 1.4s infinite both;
 }
@@ -237,29 +237,29 @@
   display: flex;
   padding: 12px;
   gap: 8px;
-  border-top: 1px solid rgba(34, 211, 238, 0.1);
+  border-top: 1px solid rgba(140, 46, 71, 0.1);
 }
 
 .dex-chat-input textarea {
   flex: 1;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(140, 46, 71, 0.2);
   outline: none;
-  background: #0f172a;
-  color: #f1f5f9;
+  background: #f9fafb;
+  color: #1f2937;
   font-size: 14px;
   font-family: inherit;
   resize: none;
 }
 
 .dex-chat-input textarea::placeholder {
-  color: #94a3b8;
+  color: #9ca3af;
 }
 
 .dex-chat-input button {
-  background: linear-gradient(135deg, #22d3ee, #38bdf8);
-  color: #020617;
+  background: #8c2e47;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   padding: 0 20px;
@@ -278,7 +278,7 @@
   padding: 8px;
   text-align: center;
   font-size: 12px;
-  color: #22d3ee;
+  color: #8c2e47;
   opacity: 0.6;
-  border-top: 1px solid rgba(34, 211, 238, 0.1);
+  border-top: 1px solid rgba(140, 46, 71, 0.1);
 }

@@ -65,7 +65,7 @@ export const ServicesPreview = () => {
           {services.map((service, index) => (
             <div
               key={service.title}
-              className="group p-8 rounded-2xl bg-secondary/50 border border-border hover:border-primary/50 transition-all duration-300 card-hover"
+              className="group p-8 rounded-2xl bg-muted border border-border hover:border-primary transition-all duration-300 card-hover"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">

@@ -53,13 +53,13 @@ export const ApproachSection = () => {
             >
               {/* Connector line */}
               {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-10 left-[60%] w-full h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
+                <div className="hidden lg:block absolute top-10 left-[60%] w-full h-0.5 bg-primary" />
               )}
               
               <div className="text-center space-y-4">
                 {/* Icon */}
                 <div className="relative inline-block">
-                  <div className="w-20 h-20 rounded-2xl bg-secondary border border-border flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                  <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center group-hover:border-primary transition-colors">
                     <step.icon className="w-8 h-8 text-primary" />
                   </div>
                   <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">

@@ -45,7 +45,7 @@ const Portfolio = () => {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 {cat}
@@ -66,7 +66,7 @@ const Portfolio = () => {
               {filteredProjects.map((project) => (
                 <div key={project.id} className="group relative rounded-2xl overflow-hidden border border-border card-hover">
                   <img src={project.image_url} alt={project.title} className="w-full aspect-video object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
+                  <div className="absolute inset-0 bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
                     <span className="text-primary text-sm font-medium mb-2">{project.category}</span>
                     <h3 className="text-xl font-semibold text-foreground mb-2">{project.title}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2">{project.description}</p>

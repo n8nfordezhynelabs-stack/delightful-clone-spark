@@ -46,7 +46,7 @@ export const Footer = () => {
                 <a
                   key={social.label}
                   href={social.href}
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-[hsl(330_40%_32%)] transition-colors"
                   aria-label={social.label}
                 >
                   <social.icon size={18} />
@@ -95,18 +95,27 @@ export const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start space-x-3">
                 <Mail size={18} className="text-primary mt-0.5" />
-                <span className="text-muted-foreground text-sm">hello@dezhyne.com</span>
+                <div className="text-muted-foreground text-sm">
+                  <p className="font-medium text-foreground">Protocol Email</p>
+                  <p>info@dezhyne.com</p>
+                  <p className="text-xs">24h Response</p>
+                </div>
               </li>
               <li className="flex items-start space-x-3">
                 <Phone size={18} className="text-primary mt-0.5" />
-                <span className="text-muted-foreground text-sm">+1 (555) 123-4567</span>
+                <div className="text-muted-foreground text-sm">
+                  <p className="font-medium text-foreground">Direct Line</p>
+                  <p>+91 6383875308</p>
+                  <p className="text-xs">Ready to Sync</p>
+                </div>
               </li>
               <li className="flex items-start space-x-3">
                 <MapPin size={18} className="text-primary mt-0.5" />
-                <span className="text-muted-foreground text-sm">
-                  123 Digital Street<br />
-                  San Francisco, CA 94102
-                </span>
+                <div className="text-muted-foreground text-sm">
+                  <p className="font-medium text-foreground">Location</p>
+                  <p>Chennai, India</p>
+                  <p className="text-xs">Mon-Fri 9AM - 6PM IST</p>
+                </div>
               </li>
             </ul>
           </div>

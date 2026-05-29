@@ -41,7 +41,7 @@ export const HeroSection = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary/20" />
+      <div className="absolute inset-0 bg-background" />
       
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
