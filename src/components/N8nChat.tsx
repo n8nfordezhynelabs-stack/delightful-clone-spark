@@ -29,10 +29,22 @@ const N8nChat = () => {
       let escaped = div.innerHTML;
 
       // Inline markdown: links + bold
+      // 1) Markdown links [text](url) -> <a>
       escaped = escaped.replace(
-        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
         '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
       );
+      // 2) Auto-link any leftover raw URLs in text NOT inside an existing <a>...</a>.
+      //    Split on anchor blocks, transform only the gaps.
+      const linkifyRaw = (s: string) =>
+        s.replace(
+          /(https?:\/\/[^\s<>()]+[^\s<>().,;:!?])/g,
+          '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+        );
+      escaped = escaped
+        .split(/(<a\b[^>]*>[\s\S]*?<\/a>)/i)
+        .map((seg, i) => (i % 2 === 1 ? seg : linkifyRaw(seg)))
+        .join("");
       escaped = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
       // Block-level: walk line-by-line so bullets group cleanly and don't

@@ -178,6 +178,8 @@
 .dex-bot a {
   color: #8c2e47;
   text-decoration: underline;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .dex-bot ul,
